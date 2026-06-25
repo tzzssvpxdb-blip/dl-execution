@@ -334,9 +334,8 @@ function buildPDF(names, office, dateStr) {
   let pos = 0;
   parts.forEach(p => { buf.set(p, pos); pos += p.length; });
 
-  let bin = '';
-  buf.forEach(b => bin += String.fromCharCode(b));
-  return 'data:application/pdf;base64,' + btoa(bin);
+  const blob = new Blob([buf], { type: 'application/pdf' });
+  return URL.createObjectURL(blob);
 }
 
 // ── Generate ──────────────────────────────────────────────────────────────────
