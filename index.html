@@ -363,6 +363,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
     margin-bottom: 8px;
   }
   .email-item-name {
@@ -389,8 +390,11 @@
     -webkit-tap-highlight-color: transparent;
     white-space: nowrap;
     flex-shrink: 0;
+    display: inline-block;
   }
   .btn-send:active { background: #3a6a96; }
+  a.btn-send { background: var(--green); }
+  a.btn-send:active { background: #255f3c; }
 
   .sheet-footer {
     padding: 16px 20px 0;
@@ -760,15 +764,17 @@ function openEmailSheet(names, matter, offices) {
     const item = document.createElement("div");
     item.className = "email-item";
     item.id = `item-${office.key}`;
+    const subj = JSON.stringify(subject);
     item.innerHTML = `
       <div class="email-item-header">
         <div>
           <div class="email-item-name">${office.label}</div>
           <div class="email-item-to">${office.email}</div>
         </div>
-        <button class="btn-send" onclick="sendOne('${office.key}', '${office.email}', ${JSON.stringify(subject)}, '${url}', '${filename}')">Send</button>
+        <button class="btn-send" id="send-btn-${office.key}" onclick="sendOne('${office.key}', '${office.email}', ${subj}, '${url}', '${filename}')">📄 PDF</button>
+        <a class="btn-send" id="mail-btn-${office.key}" href="#" style="display:none;text-decoration:none;margin-left:6px">✉ Mail</a>
       </div>
-      <div class="sent-badge" id="sent-${office.key}">✓ Mail opened</div>`;
+      <div class="sent-badge" id="sent-${office.key}"></div>`;
     container.appendChild(item);
   });
 
@@ -781,35 +787,33 @@ function closeSheet() {
   document.getElementById("email-sheet-backdrop").classList.remove("show");
 }
 
-// ── Send via iOS Mail (mailto hand-off) ──────────────────────────────────────
+// ── Send via iOS Mail ────────────────────────────────────────────────────────
 function sendOne(key, toEmail, subject, pdfUrl, filename) {
-  // Download the PDF first, then open mailto
-  const a = document.createElement("a");
-  a.href = pdfUrl;
-  a.download = filename;
-  a.click();
+  const { blob } = generatedPDFs[key];
 
-  // Brief delay then open Mail compose
-  setTimeout(() => {
-    const body = encodeURIComponent(
-      "Please find the execution search attached for your records.\n\nThank you,\nDamon"
-    );
-    const subj = encodeURIComponent(subject);
-    window.location.href = `mailto:${toEmail}?subject=${subj}&body=${body}`;
-  }, 600);
+  // Step 1: open PDF in new tab so user can save/share it
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
 
+  // Step 2: show the "Open Mail" button for this item
+  document.getElementById(`mail-btn-${key}`).style.display = "inline-block";
+  document.getElementById(`send-btn-${key}`).style.display = "none";
+  document.getElementById(`sent-${key}`).textContent = "PDF opened — tap Open Mail to compose";
   document.getElementById(`sent-${key}`).classList.add("show");
+
+  // Store mailto for the mail button
+  const body = encodeURIComponent(
+    "Please find the execution search attached for your records.\n\nThank you,\nDamon"
+  );
+  const subj = encodeURIComponent(subject);
+  document.getElementById(`mail-btn-${key}`).href = `mailto:${toEmail}?subject=${subj}&body=${body}`;
 }
 
 function sendAll() {
   const items = document.querySelectorAll("#email-items .email-item");
-  let delay = 0;
   items.forEach(item => {
-    const btn = item.querySelector(".btn-send");
-    if (btn) {
-      setTimeout(() => btn.click(), delay);
-      delay += 1800;  // stagger so iOS can handle each mailto
-    }
+    const btn = item.querySelector(".btn-send[id^=send-btn]");
+    if (btn && btn.style.display !== "none") btn.click();
   });
 }
 
