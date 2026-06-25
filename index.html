@@ -8,463 +8,130 @@
 <meta name="apple-mobile-web-app-title" content="DL Execution">
 <meta name="theme-color" content="#0f1520">
 <title>DL — Execution Search</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-
 <style>
-  /* ── Reset & base ─────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1520;--surface:#17202e;--card:#1e2a3a;--border:#2a3a50;
+  --accent:#4a7faf;--accent-lt:#6a9fcf;--green:#2e7d4f;--green-lt:#3aaa66;
+  --text:#dce4ef;--sub:#7a8fa8;--red:#c0392b;
+  --radius:14px;--radius-sm:8px;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px)
+}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+#app{display:flex;flex-direction:column;min-height:100dvh;
+  padding-top:calc(var(--safe-top) + 12px);padding-bottom:calc(var(--safe-bot) + 20px)}
+header{padding:0 20px 16px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+header h1{font-size:22px;font-weight:700;color:var(--text);line-height:1.15}
+header p{font-size:13px;color:var(--sub);margin-top:4px}
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px}
+.section-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin:0 4px 8px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
+.names-wrap{padding:14px 16px}
+.names-wrap label{display:block;font-size:13px;color:var(--sub);margin-bottom:8px}
+textarea{width:100%;min-height:110px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:15px;
+  line-height:1.5;padding:10px 12px;resize:none;outline:none;-webkit-appearance:none;transition:border-color .15s}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--sub);opacity:.7}
+.matter-wrap{padding:0 16px 14px;border-top:1px solid var(--border)}
+.matter-wrap label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
+input[type=text]{width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:15px;
+  padding:10px 12px;outline:none;-webkit-appearance:none;transition:border-color .15s}
+input[type=text]:focus{border-color:var(--accent)}
+input[type=text]::placeholder{color:var(--sub);opacity:.7}
+.bailiff-list{padding:6px 0}
+.bailiff-item{display:flex;align-items:center;gap:14px;padding:13px 16px;
+  border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:background .1s;user-select:none}
+.bailiff-item:last-child{border-bottom:none}
+.bailiff-item:active{background:var(--border)}
+.cb-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);
+  background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:background .15s,border-color .15s}
+.bailiff-item.checked .cb-box{background:var(--accent);border-color:var(--accent)}
+.cb-box svg{display:none}
+.bailiff-item.checked .cb-box svg{display:block}
+.bailiff-info{flex:1;min-width:0}
+.bailiff-name{font-size:15px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bailiff-areas{font-size:12px;color:var(--sub);margin-top:1px}
+.select-all-row{display:flex;justify-content:flex-end;gap:12px;padding:0 4px 6px}
+.select-all-row button{background:none;border:none;color:var(--accent-lt);font-size:13px;padding:4px 6px;cursor:pointer}
+footer{padding:16px 16px 0}
+.btn-generate{width:100%;padding:17px;background:var(--accent);color:white;border:none;
+  border-radius:var(--radius);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:background .15s,transform .1s;letter-spacing:.01em}
+.btn-generate:active{background:#3a6a96;transform:scale(.98)}
+.btn-generate:disabled{background:var(--border);color:var(--sub);transform:none}
+#toast{position:fixed;bottom:calc(var(--safe-bot) + 80px);left:50%;
+  transform:translateX(-50%) translateY(20px);background:#1e2a3a;border:1px solid var(--border);
+  color:var(--text);font-size:14px;padding:10px 18px;border-radius:100px;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:999}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#spinner{display:none;position:fixed;inset:0;background:rgba(10,15,25,.75);
+  align-items:center;justify-content:center;z-index:1000;flex-direction:column;gap:14px}
+#spinner.show{display:flex}
+.spin-ring{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#spinner p{color:var(--sub);font-size:14px}
 
-  :root {
-    --bg:        #0f1520;
-    --surface:   #17202e;
-    --card:      #1e2a3a;
-    --border:    #2a3a50;
-    --accent:    #4a7faf;
-    --accent-lt: #6a9fcf;
-    --green:     #2e7d4f;
-    --green-lt:  #3aaa66;
-    --text:      #dce4ef;
-    --sub:       #7a8fa8;
-    --red:       #c0392b;
-
-    --radius:    14px;
-    --radius-sm: 8px;
-    --safe-top:  env(safe-area-inset-top, 0px);
-    --safe-bot:  env(safe-area-inset-bottom, 0px);
-  }
-
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-    overscroll-behavior: none;
-  }
-
-  /* ── Layout shell ─────────────────────────────────────────────── */
-  #app {
-    display: flex;
-    flex-direction: column;
-    min-height: 100dvh;
-    padding-top: calc(var(--safe-top) + 12px);
-    padding-bottom: calc(var(--safe-bot) + 20px);
-  }
-
-  /* ── Header ───────────────────────────────────────────────────── */
-  header {
-    padding: 0 20px 16px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 20px;
-  }
-  .header-eyebrow {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 2px;
-  }
-  header h1 {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.15;
-  }
-  header p {
-    font-size: 13px;
-    color: var(--sub);
-    margin-top: 4px;
-  }
-
-  /* ── Main scroll area ─────────────────────────────────────────── */
-  main {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 16px;
-  }
-
-  /* ── Section labels ───────────────────────────────────────────── */
-  .section-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--sub);
-    margin: 0 4px 8px;
-  }
-
-  /* ── Card ─────────────────────────────────────────────────────── */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 16px;
-    overflow: hidden;
-  }
-
-  /* ── Textarea ─────────────────────────────────────────────────── */
-  .names-wrap {
-    padding: 14px 16px;
-  }
-  .names-wrap label {
-    display: block;
-    font-size: 13px;
-    color: var(--sub);
-    margin-bottom: 8px;
-  }
-  textarea {
-    width: 100%;
-    min-height: 110px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 15px;
-    line-height: 1.5;
-    padding: 10px 12px;
-    resize: none;
-    outline: none;
-    -webkit-appearance: none;
-    transition: border-color 0.15s;
-  }
-  textarea:focus { border-color: var(--accent); }
-  textarea::placeholder { color: var(--sub); opacity: 0.7; }
-
-  /* ── Matter field ─────────────────────────────────────────────── */
-  .matter-wrap {
-    padding: 0 16px 14px;
-    border-top: 1px solid var(--border);
-  }
-  .matter-wrap label {
-    display: block;
-    font-size: 13px;
-    color: var(--sub);
-    margin: 12px 0 6px;
-  }
-  input[type="text"] {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 15px;
-    padding: 10px 12px;
-    outline: none;
-    -webkit-appearance: none;
-    transition: border-color 0.15s;
-  }
-  input[type="text"]:focus { border-color: var(--accent); }
-  input[type="text"]::placeholder { color: var(--sub); opacity: 0.7; }
-
-  /* ── Bailiff checkboxes ───────────────────────────────────────── */
-  .bailiff-list { padding: 6px 0; }
-
-  .bailiff-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 13px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.1s;
-    user-select: none;
-  }
-  .bailiff-item:last-child { border-bottom: none; }
-  .bailiff-item:active { background: var(--border); }
-
-  /* Custom checkbox */
-  .cb-box {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    border: 2px solid var(--border);
-    background: var(--surface);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .bailiff-item.checked .cb-box {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-  .cb-box svg { display: none; }
-  .bailiff-item.checked .cb-box svg { display: block; }
-
-  .bailiff-info { flex: 1; min-width: 0; }
-  .bailiff-name {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .bailiff-areas {
-    font-size: 12px;
-    color: var(--sub);
-    margin-top: 1px;
-  }
-
-  /* Select all row */
-  .select-all-row {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 0 4px 6px;
-  }
-  .select-all-row button {
-    background: none;
-    border: none;
-    color: var(--accent-lt);
-    font-size: 13px;
-    padding: 4px 6px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* ── Generate button ──────────────────────────────────────────── */
-  footer {
-    padding: 16px 16px 0;
-  }
-
-  .btn-generate {
-    width: 100%;
-    padding: 17px;
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: var(--radius);
-    font-family: inherit;
-    font-size: 17px;
-    font-weight: 600;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s, transform 0.1s;
-    letter-spacing: 0.01em;
-  }
-  .btn-generate:active { background: #3a6a96; transform: scale(0.98); }
-  .btn-generate:disabled {
-    background: var(--border);
-    color: var(--sub);
-    transform: none;
-  }
-
-  /* ── Toast ────────────────────────────────────────────────────── */
-  #toast {
-    position: fixed;
-    bottom: calc(var(--safe-bot) + 80px);
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: #1e2a3a;
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 14px;
-    padding: 10px 18px;
-    border-radius: 100px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s, transform 0.2s;
-    z-index: 999;
-  }
-  #toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  /* ── Spinner overlay ──────────────────────────────────────────── */
-  #spinner {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(10,15,25,0.75);
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    flex-direction: column;
-    gap: 14px;
-  }
-  #spinner.show { display: flex; }
-  .spin-ring {
-    width: 44px; height: 44px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #spinner p { color: var(--sub); font-size: 14px; }
-
-  /* ── Email sheet (bottom sheet) ───────────────────────────────── */
-  #email-sheet-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 500;
-    backdrop-filter: blur(4px);
-  }
-  #email-sheet-backdrop.show { display: block; }
-
-  #email-sheet {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--surface);
-    border-radius: 20px 20px 0 0;
-    border-top: 1px solid var(--border);
-    z-index: 600;
-    padding: 0 0 calc(var(--safe-bot) + 16px);
-    transform: translateY(100%);
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    max-height: 90dvh;
-    overflow-y: auto;
-  }
-  #email-sheet.show { transform: translateY(0); }
-
-  .sheet-handle {
-    width: 36px; height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 10px auto 16px;
-  }
-  .sheet-title {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--text);
-    padding: 0 20px 14px;
-    border-bottom: 1px solid var(--border);
-  }
-  .sheet-subtitle {
-    font-size: 12px;
-    color: var(--sub);
-    font-weight: 400;
-    display: block;
-    margin-top: 2px;
-  }
-
-  .email-items { padding: 8px 0; }
-
-  .email-item {
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .email-item:last-child { border-bottom: none; }
-
-  .email-item-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .email-item-name {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--text);
-  }
-  .email-item-to {
-    font-size: 12px;
-    color: var(--sub);
-    margin-top: 1px;
-  }
-
-  .btn-send {
-    padding: 9px 18px;
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 100px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    white-space: nowrap;
-    flex-shrink: 0;
-    display: inline-block;
-  }
-  .btn-send:active { background: #3a6a96; }
-  a.btn-send { background: var(--green); }
-  a.btn-send:active { background: #255f3c; }
-
-  .sheet-footer {
-    padding: 16px 20px 0;
-    display: flex;
-    gap: 10px;
-  }
-  .btn-done {
-    flex: 1;
-    padding: 14px;
-    background: var(--card);
-    color: var(--sub);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn-send-all {
-    flex: 2;
-    padding: 14px;
-    background: var(--green);
-    color: white;
-    border: none;
-    border-radius: var(--radius);
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn-send-all:active { background: #255f3c; }
-
-  /* ── Sent badge ───────────────────────────────────────────────── */
-  .sent-badge {
-    display: none;
-    font-size: 12px;
-    color: var(--green-lt);
-    font-weight: 500;
-    margin-top: 4px;
-  }
-  .sent-badge.show { display: block; }
+/* Email sheet */
+#backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;backdrop-filter:blur(4px)}
+#backdrop.show{display:block}
+#sheet{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;
+  border-top:1px solid var(--border);z-index:600;padding:0 0 calc(var(--safe-bot) + 16px);
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:90dvh;overflow-y:auto}
+#sheet.show{transform:translateY(0)}
+.handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 16px}
+.sheet-title{font-size:17px;font-weight:600;color:var(--text);padding:0 20px 14px;border-bottom:1px solid var(--border)}
+.sheet-sub{font-size:12px;color:var(--sub);font-weight:400;display:block;margin-top:2px}
+.email-items{padding:8px 0}
+.email-item{padding:14px 20px;border-bottom:1px solid var(--border)}
+.email-item:last-child{border-bottom:none}
+.item-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.item-name{font-size:15px;font-weight:500;color:var(--text)}
+.item-to{font-size:12px;color:var(--sub);margin-top:1px}
+.item-buttons{display:flex;gap:8px;flex-shrink:0}
+.btn-pdf,.btn-mail{padding:9px 16px;border:none;border-radius:100px;font-family:inherit;
+  font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  white-space:nowrap;text-decoration:none;display:inline-block}
+.btn-pdf{background:var(--accent);color:white}
+.btn-pdf:active{background:#3a6a96}
+.btn-mail{background:var(--green);color:white;display:none}
+.btn-mail:active{background:#255f3c}
+.item-hint{font-size:12px;color:var(--sub);display:none;margin-top:4px}
+.item-hint.show{display:block}
+.sheet-footer{padding:16px 20px 0;display:flex;gap:10px}
+.btn-done{flex:1;padding:14px;background:var(--card);color:var(--sub);border:1px solid var(--border);
+  border-radius:var(--radius);font-family:inherit;font-size:16px;font-weight:500;cursor:pointer}
+.btn-send-all{flex:2;padding:14px;background:var(--green);color:white;border:none;
+  border-radius:var(--radius);font-family:inherit;font-size:16px;font-weight:600;cursor:pointer}
+.btn-send-all:active{background:#255f3c}
 </style>
 </head>
 <body>
 <div id="app">
-
   <header>
-    <div class="header-eyebrow">Damon Legal Services Ltd.</div>
+    <div class="eyebrow">Damon Legal Services Ltd.</div>
     <h1>Execution Search</h1>
     <p>Generate and send letters to BC court bailiffs</p>
   </header>
-
   <main>
-
-    <!-- Party names -->
     <div class="section-label">Party Names</div>
     <div class="card">
       <div class="names-wrap">
-        <label>One name per line — will appear uppercased in the Re: line</label>
+        <label>One name per line — appears uppercased in the Re: line</label>
         <textarea id="names" placeholder="e.g. Smith, John&#10;Acme Holdings Ltd." autocorrect="off" autocapitalize="words" spellcheck="false"></textarea>
       </div>
       <div class="matter-wrap">
-        <label>Matter / File reference <span style="color:var(--sub);font-weight:400">(optional — used for email subject)</span></label>
+        <label>Matter / File reference <span style="color:var(--sub);font-weight:400">(optional)</span></label>
         <input type="text" id="matter" placeholder="e.g. Lender v. Borrower" autocorrect="off">
       </div>
     </div>
-
-    <!-- Bailiff offices -->
     <div class="section-label" style="margin-top:4px">Bailiff Offices</div>
     <div class="select-all-row">
       <button onclick="selectAll()">Select all</button>
@@ -473,366 +140,277 @@
     <div class="card">
       <div class="bailiff-list" id="bailiff-list"></div>
     </div>
-
   </main>
-
   <footer>
-    <button class="btn-generate" id="gen-btn" onclick="generate()">
-      Generate Letters
-    </button>
+    <button class="btn-generate" id="gen-btn" onclick="generate()">Generate Letters</button>
   </footer>
-
 </div>
 
-<!-- Spinner -->
 <div id="spinner"><div class="spin-ring"></div><p>Generating PDFs…</p></div>
-
-<!-- Toast -->
 <div id="toast"></div>
-
-<!-- Email bottom sheet -->
-<div id="email-sheet-backdrop" onclick="closeSheet()"></div>
-<div id="email-sheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">
-    Send Letters
-    <span class="sheet-subtitle" id="sheet-subtitle"></span>
-  </div>
+<div id="backdrop" onclick="closeSheet()"></div>
+<div id="sheet">
+  <div class="handle"></div>
+  <div class="sheet-title">Send Letters<span class="sheet-sub" id="sheet-sub"></span></div>
   <div class="email-items" id="email-items"></div>
   <div class="sheet-footer">
     <button class="btn-done" onclick="closeSheet()">Done</button>
-    <button class="btn-send-all" id="send-all-btn" onclick="sendAll()">Send All</button>
+    <button class="btn-send-all" onclick="sendAll()">Open All PDFs</button>
   </div>
 </div>
 
 <script>
 // ── Bailiff data ──────────────────────────────────────────────────────────────
 const OFFICES = [
-  {
-    key: "consolidated_victoria",
-    label: "Consolidated — Victoria",
-    name: "Consolidated Civil Enforcement BC Inc.",
-    address: ["Consolidated Civil Enforcement BC Inc.", "300-848 Courtney Street", "Victoria, B.C., V8W 1C4"],
-    email: "bcsearches@ccebailiff.ca",
-    area: "areas 1, 2 & 3",
-  },
-  {
-    key: "canada_west",
-    label: "Canada West",
-    name: "Canada West Court Bailiffs Ltd.",
-    address: ["Canada West Court Bailiffs Ltd.", "25019-35-1800 Tranquille Rd", "Kamloops, B.C., V2B 8R6"],
-    email: "cwcb@telus.net",
-    area: "areas 1, 2, 3, 7, 8 & 12",
-  },
-  {
-    key: "accurate",
-    label: "Accurate Court Bailiff",
-    name: "Accurate Court Bailiff Services Ltd.",
-    address: ["Accurate Court Bailiff Services Ltd.", "6139 Trapp Avenue", "Burnaby, B.C., V3N 2V3"],
-    email: "support@aebailiffs.com",
-    area: "areas 4, 5 & 6",
-  },
-  {
-    key: "integrated",
-    label: "Integrated Civil Enforcement",
-    name: "Integrated Civil Enforcement",
-    address: ["Integrated Civil Enforcement", "101B-625 Agnes St", "New Westminster, B.C., V3M 5Y4"],
-    email: "searches@integratedcivil.ca",
-    area: "areas 4, 5 & 6",
-  },
-  {
-    key: "consolidated_nw",
-    label: "Consolidated — New Westminster",
-    name: "Consolidated Civil Enforcement BC Inc.",
-    address: ["Consolidated Civil Enforcement BC Inc.", "611 Agnes Street", "New Westminster, B.C., V3M 1G9"],
-    email: "bcsearches@ccebailiff.ca",
-    area: "areas 4, 5 & 6",
-  },
-  {
-    key: "north_central",
-    label: "North Central Bailiffs",
-    name: "North Central Bailiffs Ltd.",
-    address: ["North Central Bailiffs Ltd.", "2900 East Boundary Rd #101A", "West Kelowna, B.C., V4T 3K5"],
-    email: "headoffice@northcentralbailiffs.bc.ca",
-    area: "areas 7, 8, 9, 10, 11 & 12",
-  },
-  {
-    key: "expert",
-    label: "Expert Bailiff",
-    name: "Expert Bailiff & Collection Services Ltd.",
-    address: ["Expert Bailiff & Collection Services Ltd.", "10315 - 100 Ave", "Fort St. John, B.C., V1J 1Y8"],
-    email: "reception.expert@gmail.com",
-    area: "area 11",
-  },
+  { key:"consolidated_vic", label:"Consolidated — Victoria",     addr:["Consolidated Civil Enforcement BC Inc.","300-848 Courtney Street","Victoria, B.C., V8W 1C4"],       email:"bcsearches@ccebailiff.ca",         area:"areas 1, 2 & 3" },
+  { key:"canada_west",      label:"Canada West",                 addr:["Canada West Court Bailiffs Ltd.","25019-35-1800 Tranquille Rd","Kamloops, B.C., V2B 8R6"],           email:"cwcb@telus.net",                   area:"areas 1, 2, 3, 7, 8 & 12" },
+  { key:"accurate",         label:"Accurate Court Bailiff",      addr:["Accurate Court Bailiff Services Ltd.","6139 Trapp Avenue","Burnaby, B.C., V3N 2V3"],                 email:"support@aebailiffs.com",           area:"areas 4, 5 & 6" },
+  { key:"integrated",       label:"Integrated Civil Enforcement",addr:["Integrated Civil Enforcement","101B-625 Agnes St","New Westminster, B.C., V3M 5Y4"],                 email:"searches@integratedcivil.ca",      area:"areas 4, 5 & 6" },
+  { key:"consolidated_nw",  label:"Consolidated — New Westminster",addr:["Consolidated Civil Enforcement BC Inc.","611 Agnes Street","New Westminster, B.C., V3M 1G9"],      email:"bcsearches@ccebailiff.ca",         area:"areas 4, 5 & 6" },
+  { key:"north_central",    label:"North Central Bailiffs",      addr:["North Central Bailiffs Ltd.","2900 East Boundary Rd #101A","West Kelowna, B.C., V4T 3K5"],          email:"headoffice@northcentralbailiffs.bc.ca", area:"areas 7, 8, 9, 10, 11 & 12" },
+  { key:"expert",           label:"Expert Bailiff",              addr:["Expert Bailiff & Collection Services Ltd.","10315 - 100 Ave","Fort St. John, B.C., V1J 1Y8"],       email:"reception.expert@gmail.com",       area:"area 11" },
 ];
 
-// ── State ─────────────────────────────────────────────────────────────────────
 const checked = new Set();
-let generatedPDFs = {};  // key → { blob, filename, office }
+const pdfs = {};  // key -> { dataUrl, filename, office, subject }
 
-// ── Build bailiff list ────────────────────────────────────────────────────────
-function buildBailiffList() {
+// ── Bailiff list ──────────────────────────────────────────────────────────────
+function buildList() {
   const list = document.getElementById("bailiff-list");
-  OFFICES.forEach(office => {
-    const item = document.createElement("div");
-    item.className = "bailiff-item";
-    item.dataset.key = office.key;
-    item.innerHTML = `
-      <div class="cb-box">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
-          <path d="M1.5 5L5 8.5L11.5 1.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="bailiff-info">
-        <div class="bailiff-name">${office.label}</div>
-        <div class="bailiff-areas">${office.area}</div>
-      </div>`;
-    item.addEventListener("click", () => toggleOffice(office.key, item));
-    list.appendChild(item);
-  });
-}
-
-function toggleOffice(key, el) {
-  if (checked.has(key)) { checked.delete(key); el.classList.remove("checked"); }
-  else { checked.add(key); el.classList.add("checked"); }
-}
-
-function selectAll() {
   OFFICES.forEach(o => {
-    checked.add(o.key);
-    document.querySelector(`[data-key="${o.key}"]`).classList.add("checked");
+    const el = document.createElement("div");
+    el.className = "bailiff-item";
+    el.dataset.key = o.key;
+    el.innerHTML = `<div class="cb-box"><svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1.5 5L5 8.5L11.5 1.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="bailiff-info"><div class="bailiff-name">${o.label}</div><div class="bailiff-areas">${o.area}</div></div>`;
+    el.addEventListener("click", () => {
+      checked.has(o.key) ? (checked.delete(o.key), el.classList.remove("checked")) : (checked.add(o.key), el.classList.add("checked"));
+    });
+    list.appendChild(el);
   });
 }
-function clearAll() {
-  OFFICES.forEach(o => {
-    checked.delete(o.key);
-    document.querySelector(`[data-key="${o.key}"]`).classList.remove("checked");
-  });
+
+function selectAll() { OFFICES.forEach(o => { checked.add(o.key); document.querySelector(`[data-key="${o.key}"]`).classList.add("checked"); }); }
+function clearAll()  { OFFICES.forEach(o => { checked.delete(o.key); document.querySelector(`[data-key="${o.key}"]`).classList.remove("checked"); }); }
+
+// ── Date ──────────────────────────────────────────────────────────────────────
+function todayVan() {
+  return new Date(new Date().toLocaleString("en-US",{timeZone:"America/Vancouver"}))
+    .toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
 }
 
-// ── Date helper (Vancouver) ───────────────────────────────────────────────────
-function todayVancouver() {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Vancouver" }));
-  return now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-}
+// ── Pure-JS PDF builder ───────────────────────────────────────────────────────
+// Builds a minimal valid PDF using only standard Helvetica fonts (no embedding).
+// Helvetica is a built-in PDF font — no external library needed.
 
-// ── PDF generation ────────────────────────────────────────────────────────────
-async function generateLetterPDF(names, office, dateStr) {
-  const { PDFDocument, rgb, StandardFonts } = PDFLib;
+function makePDF(names, office, dateStr) {
+  const LM = 72, TW = 468, LS = 13.5, PS = 11;
 
-  const doc  = await PDFDocument.create();
-  const page = doc.addPage([612, 792]);   // US Letter
+  // Word-wrap helper
+  function wrap(text, maxW, cpl) {
+    // Approximate chars per line for Helvetica at PS pt (avg ~5.5pt/char)
+    const words = text.split(" ");
+    const lines = [];
+    let cur = "";
+    words.forEach(w => {
+      const test = cur ? cur + " " + w : w;
+      if (test.length <= cpl) { cur = test; }
+      else { if (cur) lines.push(cur); cur = w; }
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
 
-  const timesRoman = await doc.embedFont(StandardFonts.TimesRoman);
-  const timesBold  = await doc.embedFont(StandardFonts.TimesRomanBold);
+  // Build content stream
+  let y = 730;
+  const ops = [];
 
-  const { width: W, height: H } = page.getSize();
-  const LM   = 72;    // 1 inch
-  const TW   = W - 144;
-  const LINE = 13.32; // 0.185in
-  const PARA = LINE * 2.2;
+  function text(str, x, yy, bold) {
+    const safe = str.replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
+    ops.push(`BT /${bold?"Hb":"Hr"} ${PS} Tf ${x} ${yy} Td (${safe}) Tj ET`);
+  }
 
-  let y = H - 64.8; // 0.9in from top
+  function centerText(str, yy, bold) {
+    // Approx width: Helvetica ~5.5pt per char at 11pt
+    const w = str.length * 5.5;
+    const x = (612 - w) / 2;
+    text(str, x, yy, bold);
+  }
 
-  // ── Letterhead ──────────────────────────────────────────────────────────────
-  const drawCentered = (text, font, size, yPos, color) => {
-    const tw = font.widthOfTextAtSize(text, size);
-    page.drawText(text, { x: (W - tw) / 2, y: yPos, font, size, color: color || rgb(0,0,0) });
+  function line(x1, y1, x2, y2) {
+    ops.push(`${x1} ${y1} m ${x2} ${y2} l S`);
+  }
+
+  // Letterhead
+  centerText("DAMON LEGAL SERVICES LTD.", y, true); y -= LS;
+  centerText("300 - 1122 Mainland Street", y, false); y -= LS;
+  centerText("Vancouver, B.C., V6B 5L1", y, false); y -= LS;
+  centerText("TEL: (604) 904-6501  FAX: (604) 904-6502", y, false); y -= LS * 0.8;
+
+  // Separator
+  ops.push("0.6 0.6 0.6 RG 0.5 w");
+  line(LM, y, 612 - LM, y);
+  ops.push("0 0 0 RG 1 w");
+  y -= LS * 1.5;
+
+  // Date
+  text(dateStr, LM, y, false); y -= LS * 2.2;
+
+  // Recipient
+  office.addr.forEach(l => { text(l, LM, y, false); y -= LS; });
+  y -= LS * 0.5;
+
+  // Salutation
+  text("Dear Sirs:", LM, y, false); y -= LS * 2.2;
+
+  // Re: block
+  const reX = LM + 33;
+  text("Re:", LM, y, true);
+  names.forEach((n, i) => { text(n.toUpperCase(), reX, y, true); y -= LS; });
+  y -= LS;
+
+  // Body
+  const body = `We request that you search the Parties in your records in ${office.area} for any outstanding Writs of Seizure and Sale, Writs of Sequestration, Writs of Possession, Writs of Delivery, Writs of Fieri Facias, Attachments, or any other Writs or Warrants of Execution issued against the Parties and Individual.  In addition, we request that you search the Parties for any filings or entries made in the Creditor's Relief Book kept pursuant to the Creditor Assistance Act.`;
+  const bodyLines = wrap(body, TW, 78);
+  bodyLines.forEach(l => { text(l, LM, y, false); y -= LS; });
+  y -= LS;
+
+  // Closing
+  text("Thank you for your assistance.", LM, y, false); y -= LS * 2.2;
+  text("Yours very truly,", LM, y, false); y -= LS * 2;
+  text("DAMON LEGAL SERVICES LTD.", LM, y, false); y -= LS * 3;
+  text("Per:", LM, y, false); y -= LS;
+  text("        Damon J. Wong", LM, y, false);
+
+  // Assemble PDF
+  const stream = ops.join("\n");
+  const enc = s => {
+    let b = "";
+    for (let i = 0; i < s.length; i++) b += String.fromCharCode(s.charCodeAt(i) & 0xff);
+    return b;
   };
 
-  drawCentered("DAMON LEGAL SERVICES LTD.", timesBold, 12, y);
-  y -= LINE * 1.3;
-  for (const line of ["300 - 1122 Mainland Street", "Vancouver, B.C., V6B 5L1", "TEL: (604) 904-6501  FAX: (604) 904-6502"]) {
-    drawCentered(line, timesRoman, 10, y);
-    y -= LINE;
-  }
+  const obj = (n, s) => `${n} 0 obj\n${s}\nendobj\n`;
 
-  // Thin separator
-  y -= LINE * 0.5;
-  page.drawLine({ start: { x: LM, y }, end: { x: W - LM, y }, thickness: 0.5, color: rgb(0.55, 0.55, 0.55) });
-  y -= LINE * 1.2;
+  const cat    = obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  const pages  = obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  const page   = obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]\n   /Contents 4 0 R /Resources << /Font << /Hr 5 0 R /Hb 6 0 R >> >> >>`);
+  const strObj = obj(4, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+  const fontR  = obj(5, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  const fontB  = obj(6, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
 
-  // ── Date ────────────────────────────────────────────────────────────────────
-  page.drawText(dateStr, { x: LM, y, font: timesRoman, size: 11 });
-  y -= PARA;
+  const body2  = "%PDF-1.4\n" + cat + pages + page + strObj + fontR + fontB;
+  const xref   = body2.length;
+  // Simple xref (not byte-accurate but most viewers accept it)
+  const pdf = body2 +
+    "xref\n0 7\n" +
+    "0000000000 65535 f \n" +
+    "0000000009 00000 n \n" +
+    "0000000058 00000 n \n" +
+    "0000000115 00000 n \n" +
+    "0000000266 00000 n \n" +
+    "0000000" + (266 + stream.length + 20).toString().padStart(3,"0") + " 00000 n \n" +
+    "0000000000 00000 n \n" +
+    `trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
 
-  // ── Recipient ───────────────────────────────────────────────────────────────
-  for (const line of office.address) {
-    page.drawText(line, { x: LM, y, font: timesRoman, size: 11 });
-    y -= LINE;
-  }
-  y -= LINE * 0.5;
-
-  // ── Salutation ──────────────────────────────────────────────────────────────
-  page.drawText("Dear Sirs:", { x: LM, y, font: timesRoman, size: 11 });
-  y -= PARA;
-
-  // ── Re: block ───────────────────────────────────────────────────────────────
-  const rePrefix = "Re:   ";
-  const prefixW  = timesBold.widthOfTextAtSize(rePrefix, 11);
-  page.drawText(rePrefix + names[0].toUpperCase(), { x: LM, y, font: timesBold, size: 11 });
-  for (let i = 1; i < names.length; i++) {
-    y -= LINE;
-    page.drawText(names[i].toUpperCase(), { x: LM + prefixW, y, font: timesBold, size: 11 });
-  }
-  y -= PARA;
-
-  // ── Body ────────────────────────────────────────────────────────────────────
-  const bodyText = `We request that you search the Parties in your records in ${office.area} for any outstanding Writs of Seizure and Sale, Writs of Sequestration, Writs of Possession, Writs of Delivery, Writs of Fieri Facias, Attachments, or any other Writs or Warrants of Execution issued against the Parties and Individual.  In addition, we request that you search the Parties for any filings or entries made in the Creditor\u2019s Relief Book kept pursuant to the Creditor Assistance Act.`;
-
-  const words = bodyText.split(" ");
-  let lineBuf = [];
-  for (const word of words) {
-    const test = [...lineBuf, word].join(" ");
-    if (timesRoman.widthOfTextAtSize(test, 11) <= TW) {
-      lineBuf.push(word);
-    } else {
-      page.drawText(lineBuf.join(" "), { x: LM, y, font: timesRoman, size: 11 });
-      y -= LINE;
-      lineBuf = [word];
-    }
-  }
-  if (lineBuf.length) { page.drawText(lineBuf.join(" "), { x: LM, y, font: timesRoman, size: 11 }); y -= LINE; }
-  y -= LINE;
-
-  // ── Closing ─────────────────────────────────────────────────────────────────
-  page.drawText("Thank you for your assistance.", { x: LM, y, font: timesRoman, size: 11 });
-  y -= PARA;
-  page.drawText("Yours very truly,", { x: LM, y, font: timesRoman, size: 11 });
-  y -= LINE * 2.0;
-
-  const firmY = y;
-  const perY  = y - 37.4;   // 0.52in
-  const nameY = perY - LINE;
-
-  page.drawText("DAMON LEGAL SERVICES LTD.", { x: LM, y: firmY, font: timesRoman, size: 11 });
-  page.drawText("Per:", { x: LM, y: perY,  font: timesRoman, size: 11 });
-  page.drawText("        Damon J. Wong", { x: LM, y: nameY, font: timesRoman, size: 11 });
-
-  const pdfBytes = await doc.save();
-  return new Blob([pdfBytes], { type: "application/pdf" });
+  // Encode to base64 data URL
+  const bytes = new TextEncoder().encode(pdf);
+  let bin = "";
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return "data:application/pdf;base64," + btoa(bin);
 }
 
-// ── Main generate flow ────────────────────────────────────────────────────────
-async function generate() {
-  const rawNames = document.getElementById("names").value.trim();
-  if (!rawNames) { showToast("Enter at least one party name"); return; }
-  if (checked.size === 0) { showToast("Select at least one bailiff office"); return; }
+// ── Generate ──────────────────────────────────────────────────────────────────
+function generate() {
+  const raw = document.getElementById("names").value.trim();
+  if (!raw) { showToast("Enter at least one party name"); return; }
+  if (!checked.size) { showToast("Select at least one bailiff office"); return; }
 
-  const names   = rawNames.split("\n").map(n => n.trim()).filter(Boolean);
-  const matter  = document.getElementById("matter").value.trim();
-  const dateStr = todayVancouver();
-  const selectedOffices = OFFICES.filter(o => checked.has(o.key));
+  const names  = raw.split("\n").map(n => n.trim()).filter(Boolean);
+  const matter = document.getElementById("matter").value.trim();
+  const date   = todayVan();
+  const subject = "Execution Search \u2014 " + (matter || names.join(", "));
+  const selected = OFFICES.filter(o => checked.has(o.key));
 
   showSpinner(true);
-  generatedPDFs = {};
 
-  try {
-    for (const office of selectedOffices) {
-      const blob = await generateLetterPDF(names, office, dateStr);
-      const safeMatter = matter
-        ? matter.replace(/[/\\:]/g, "-").substring(0, 30)
-        : names[0].replace(/[,]/g, "").replace(/\s+/g, "_").substring(0, 30);
-      const filename = `${safeMatter}_${office.key}.pdf`;
-      generatedPDFs[office.key] = { blob, filename, office };
+  // Use setTimeout so spinner renders before the sync PDF work
+  setTimeout(() => {
+    try {
+      selected.forEach(o => {
+        const safeName = (matter || names[0].replace(/,/g,"").replace(/\s+/g,"_")).substring(0,30);
+        const filename = safeName + "_" + o.key + ".pdf";
+        const dataUrl  = makePDF(names, o, date);
+        pdfs[o.key]    = { dataUrl, filename, office: o, subject };
+      });
+      showSpinner(false);
+      openSheet(selected, subject);
+    } catch(e) {
+      showSpinner(false);
+      showToast("Error: " + e.message);
+      console.error(e);
     }
-    showSpinner(false);
-    openEmailSheet(names, matter, selectedOffices);
-  } catch (err) {
-    showSpinner(false);
-    showToast("Error generating PDFs");
-    console.error(err);
-  }
+  }, 50);
 }
 
-// ── Email sheet ───────────────────────────────────────────────────────────────
-function openEmailSheet(names, matter, offices) {
-  const subject = matter
-    ? `Execution Search — ${matter}`
-    : `Execution Search — ${names.join(", ")}`;
-
-  document.getElementById("sheet-subtitle").textContent =
-    `${offices.length} letter${offices.length > 1 ? "s" : ""} ready`;
-
+// ── Sheet ─────────────────────────────────────────────────────────────────────
+function openSheet(offices, subject) {
+  document.getElementById("sheet-sub").textContent = offices.length + " letter" + (offices.length > 1 ? "s" : "") + " ready";
   const container = document.getElementById("email-items");
   container.innerHTML = "";
 
-  offices.forEach(office => {
-    const { blob, filename } = generatedPDFs[office.key];
-    const url = URL.createObjectURL(blob);
+  offices.forEach(o => {
+    const { dataUrl, subject: subj } = pdfs[o.key];
+    const body = encodeURIComponent("Please find the execution search attached for your records.\n\nThank you,\nDamon");
+    const subEnc = encodeURIComponent(subj);
+    const mailHref = `mailto:${o.email}?subject=${subEnc}&body=${body}`;
 
-    const item = document.createElement("div");
-    item.className = "email-item";
-    item.id = `item-${office.key}`;
-    const subj = JSON.stringify(subject);
-    item.innerHTML = `
-      <div class="email-item-header">
-        <div>
-          <div class="email-item-name">${office.label}</div>
-          <div class="email-item-to">${office.email}</div>
+    const el = document.createElement("div");
+    el.className = "email-item";
+    el.innerHTML = `
+      <div class="item-row">
+        <div><div class="item-name">${o.label}</div><div class="item-to">${o.email}</div></div>
+        <div class="item-buttons">
+          <a class="btn-pdf" href="${dataUrl}" download="${pdfs[o.key].filename}" id="pdf-${o.key}" onclick="onPdfTap('${o.key}')">📄 PDF</a>
+          <a class="btn-mail" href="${mailHref}" id="mail-${o.key}">✉ Mail</a>
         </div>
-        <button class="btn-send" id="send-btn-${office.key}" onclick="sendOne('${office.key}', '${office.email}', ${subj}, '${url}', '${filename}')">📄 PDF</button>
-        <a class="btn-send" id="mail-btn-${office.key}" href="#" style="display:none;text-decoration:none;margin-left:6px">✉ Mail</a>
       </div>
-      <div class="sent-badge" id="sent-${office.key}"></div>`;
-    container.appendChild(item);
+      <div class="item-hint" id="hint-${o.key}">PDF saved — now tap ✉ Mail to compose</div>`;
+    container.appendChild(el);
   });
 
-  document.getElementById("email-sheet-backdrop").classList.add("show");
-  setTimeout(() => document.getElementById("email-sheet").classList.add("show"), 10);
+  document.getElementById("backdrop").classList.add("show");
+  setTimeout(() => document.getElementById("sheet").classList.add("show"), 10);
+}
+
+function onPdfTap(key) {
+  setTimeout(() => {
+    document.getElementById("mail-" + key).style.display = "inline-block";
+    const hint = document.getElementById("hint-" + key);
+    hint.classList.add("show");
+  }, 300);
 }
 
 function closeSheet() {
-  document.getElementById("email-sheet").classList.remove("show");
-  document.getElementById("email-sheet-backdrop").classList.remove("show");
-}
-
-// ── Send via iOS Mail ────────────────────────────────────────────────────────
-function sendOne(key, toEmail, subject, pdfUrl, filename) {
-  const { blob } = generatedPDFs[key];
-
-  // Step 1: open PDF in new tab so user can save/share it
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
-
-  // Step 2: show the "Open Mail" button for this item
-  document.getElementById(`mail-btn-${key}`).style.display = "inline-block";
-  document.getElementById(`send-btn-${key}`).style.display = "none";
-  document.getElementById(`sent-${key}`).textContent = "PDF opened — tap Open Mail to compose";
-  document.getElementById(`sent-${key}`).classList.add("show");
-
-  // Store mailto for the mail button
-  const body = encodeURIComponent(
-    "Please find the execution search attached for your records.\n\nThank you,\nDamon"
-  );
-  const subj = encodeURIComponent(subject);
-  document.getElementById(`mail-btn-${key}`).href = `mailto:${toEmail}?subject=${subj}&body=${body}`;
+  document.getElementById("sheet").classList.remove("show");
+  document.getElementById("backdrop").classList.remove("show");
 }
 
 function sendAll() {
-  const items = document.querySelectorAll("#email-items .email-item");
-  items.forEach(item => {
-    const btn = item.querySelector(".btn-send[id^=send-btn]");
-    if (btn && btn.style.display !== "none") btn.click();
+  document.querySelectorAll(".btn-pdf").forEach((a, i) => {
+    setTimeout(() => a.click(), i * 800);
   });
 }
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
-function showSpinner(on) {
-  document.getElementById("spinner").classList.toggle("show", on);
-}
-
-let toastTimer;
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showSpinner(on) { document.getElementById("spinner").classList.toggle("show", on); }
+let _tt;
 function showToast(msg) {
   const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove("show"), 2800);
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
-buildBailiffList();
+buildList();
 </script>
 </body>
 </html>
